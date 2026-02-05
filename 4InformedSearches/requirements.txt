@@ -1,0 +1,5 @@
+# Maze Pathfinding Visualizer - Dependencies
+# ==========================================
+
+# For graphical UI (optional - terminal mode works without this)
+pygame>=2.5.0
