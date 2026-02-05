@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Pathfinding Visualizer - Learn Search Algorithms</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #1a1a2e;
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+        
+        .subtitle {
+            color: #888;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-reset { background: #e74c3c; color: white; }
+        .btn-reset:hover { background: #c0392b; }
+        
+        .btn-clear { background: #f39c12; color: white; }
+        .btn-clear:hover { background: #d68910; }
+        
+        .btn-dfs { background: #9b59b6; color: white; }
+        .btn-dfs:hover { background: #8e44ad; }
+        
+        .btn-bfs { background: #3498db; color: white; }
+        .btn-bfs:hover { background: #2980b9; }
+        
+        .btn-astar { background: #2ecc71; color: white; }
+        .btn-astar:hover { background: #27ae60; }
+        
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        #maze-container {
+            background: #0f0f23;
+            border: 3px solid #333;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        #maze {
+            display: grid;
+            gap: 1px;
+            background: #222;
+        }
+        
+        .cell {
+            width: 20px;
+            height: 20px;
+            background: #1a1a2e;
+            transition: background 0.1s ease;
+            cursor: pointer;
+        }
+        
+        .cell:hover {
+            filter: brightness(1.3);
+        }
+        
+        .wall { background: #e74c3c; }
+        .start { background: #f1c40f; }
+        .goal { background: #2ecc71; }
+        .visited { background: #9b59b6; }
+        .path { background: #e67e22; }
+        .current { background: #fff; }
+        
+        .status-bar {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: #16213e;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 400px;
+        }
+        
+        .status-message {
+            font-size: 16px;
+            color: #00d4ff;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #888;
+        }
+        
+        .stats span {
+            color: #fff;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background: #16213e;
+            border-radius: 8px;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .instructions h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        
+        .instructions p {
+            color: #aaa;
+            line-height: 1.6;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .speed-control input {
+            width: 150px;
+        }
+        
+        .algorithm-info {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 800px;
+        }
+        
+        .algo-card {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .algo-card.dfs { border-color: #9b59b6; }
+        .algo-card.bfs { border-color: #3498db; }
+        .algo-card.astar { border-color: #2ecc71; }
+        
+        .algo-card h4 {
+            margin-bottom: 8px;
+        }
+        
+        .algo-card p {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Maze Pathfinding Visualizer</h1>
+    <p class="subtitle">Learn Search Algorithms: DFS, BFS, and A*</p>
+    
+    <div class="controls">
+        <button class="btn-reset" onclick="resetMaze()">Reset</button>
+        <button class="btn-clear" onclick="clearVisualization()">Clear Path</button>
+        <button class="btn-dfs" onclick="runAlgorithm('dfs')">DFS</button>
+        <button class="btn-bfs" onclick="runAlgorithm('bfs')">BFS</button>
+        <button class="btn-astar" onclick="runAlgorithm('astar')">A*</button>
+    </div>
+    
+    <div id="maze-container">
+        <div id="maze"></div>
+    </div>
+    
+    <div class="status-bar">
+        <div class="status-message" id="status">Click to place START, then GOAL, then draw walls</div>
+        <div class="stats">
+            <div>Path Length: <span id="path-length">-</span></div>
+            <div>Cells Explored: <span id="cells-explored">-</span></div>
+            <div>Mode: <span id="mode">START</span></div>
+        </div>
+    </div>
+    
+    <div class="speed-control">
+        <label>Animation Speed:</label>
+        <input type="range" id="speed" min="1" max="100" value="50">
+        <span id="speed-value">50ms</span>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div> Wall</div>
+        <div class="legend-item"><div class="legend-color" style="background: #f1c40f;"></div> Start</div>
+        <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div> Goal</div>
+        <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div> Visited</div>
+        <div class="legend-item"><div class="legend-color" style="background: #e67e22;"></div> Path</div>
+    </div>
+    
+    <div class="algorithm-info">
+        <div class="algo-card dfs">
+            <h4>🔮 DFS (Depth-First)</h4>
+            <p>Uses a <strong>Stack</strong> (LIFO). Explores deep before wide. Fast but <strong>NOT optimal</strong> - may find long paths.</p>
+        </div>
+        <div class="algo-card bfs">
+            <h4>🌊 BFS (Breadth-First)</h4>
+            <p>Uses a <strong>Queue</strong> (FIFO). Explores level by level. <strong>Guarantees shortest path</strong> but explores more cells.</p>
+        </div>
+        <div class="algo-card astar">
+            <h4>⭐ A* (A-Star)</h4>
+            <p>Uses <strong>Priority Queue</strong> with heuristic. <strong>Optimal AND efficient</strong> - finds shortest path with fewer explorations.</p>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h3>How to Use</h3>
+        <p>
+            1️⃣ Click a cell to place the <strong>START</strong> point (yellow)<br>
+            2️⃣ Click another cell to place the <strong>GOAL</strong> (green)<br>
+            3️⃣ Click or drag to draw <strong>WALLS</strong> (red)<br>
+            4️⃣ Click an algorithm button to watch it find the path!
+        </p>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const ROWS = 25;
+        const COLS = 30;
+        
+        // ===== STATE =====
+        let grid = [];
+        let start = null;
+        let goal = null;
+        let mode = 'start'; // 'start', 'goal', 'wall'
+        let isRunning = false;
+        let isMouseDown = false;
+        
+        // ===== INITIALIZATION =====
+        function initMaze() {
+            const mazeEl = document.getElementById('maze');
+            mazeEl.style.gridTemplateColumns = `repeat(${COLS}, 20px)`;
+            mazeEl.innerHTML = '';
+            grid = [];
+            
+            for (let r = 0; r < ROWS; r++) {
+                grid[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    // Border walls
+                    if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) {
+                        cell.classList.add('wall');
+                        grid[r][c] = 'wall';
+                    } else {
+                        grid[r][c] = 'empty';
+                    }
+                    
+                    cell.addEventListener('mousedown', () => handleCellClick(r, c));
+                    cell.addEventListener('mouseenter', () => handleCellDrag(r, c));
+                    
+                    mazeEl.appendChild(cell);
+                }
+            }
+            
+            start = null;
+            goal = null;
+            mode = 'start';
+            updateStatus('Click to place START, then GOAL, then draw walls');
+            updateMode('START');
+            updateStats('-', '-');
+        }
+        
+        // ===== CELL INTERACTION =====
+        function getCell(r, c) {
+            return document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+        }
+        
+        function handleCellClick(r, c) {
+            if (isRunning) return;
+            if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) return; // Border
+            
+            isMouseDown = true;
+            
+            if (mode === 'start') {
+                if (start) {
+                    getCell(start.r, start.c).classList.remove('start');
+                    grid[start.r][start.c] = 'empty';
+                }
+                start = { r, c };
+                getCell(r, c).className = 'cell start';
+                grid[r][c] = 'start';
+                mode = 'goal';
+                updateStatus('Now click to place GOAL');
+                updateMode('GOAL');
+            } else if (mode === 'goal') {
+                if (goal) {
+                    getCell(goal.r, goal.c).classList.remove('goal');
+                    grid[goal.r][goal.c] = 'empty';
+                }
+                goal = { r, c };
+                getCell(r, c).className = 'cell goal';
+                grid[r][c] = 'goal';
+                mode = 'wall';
+                updateStatus('Draw walls with click/drag. Right-click to erase.');
+                updateMode('WALL');
+            } else {
+                toggleWall(r, c);
+            }
+        }
+        
+        function handleCellDrag(r, c) {
+            if (!isMouseDown || isRunning || mode !== 'wall') return;
+            if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) return;
+            if (grid[r][c] === 'start' || grid[r][c] === 'goal') return;
+            
+            const cell = getCell(r, c);
+            cell.className = 'cell wall';
+            grid[r][c] = 'wall';
+        }
+        
+        function toggleWall(r, c) {
+            if (grid[r][c] === 'start' || grid[r][c] === 'goal') return;
+            
+            const cell = getCell(r, c);
+            if (grid[r][c] === 'wall') {
+                cell.className = 'cell';
+                grid[r][c] = 'empty';
+            } else {
+                cell.className = 'cell wall';
+                grid[r][c] = 'wall';
+            }
+        }
+        
+        document.addEventListener('mouseup', () => isMouseDown = false);
+        
+        // ===== UI UPDATES =====
+        function updateStatus(msg) {
+            document.getElementById('status').textContent = msg;
+        }
+        
+        function updateMode(m) {
+            document.getElementById('mode').textContent = m;
+        }
+        
+        function updateStats(pathLen, explored) {
+            document.getElementById('path-length').textContent = pathLen;
+            document.getElementById('cells-explored').textContent = explored;
+        }
+        
+        function getSpeed() {
+            return 101 - document.getElementById('speed').value;
+        }
+        
+        document.getElementById('speed').addEventListener('input', (e) => {
+            document.getElementById('speed-value').textContent = (101 - e.target.value) + 'ms';
+        });
+        
+        // ===== MAZE CONTROLS =====
+        function resetMaze() {
+            if (isRunning) return;
+            initMaze();
+        }
+        
+        function clearVisualization() {
+            if (isRunning) return;
+            
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] === 'visited' || grid[r][c] === 'path') {
+                        grid[r][c] = 'empty';
+                        getCell(r, c).className = 'cell';
+                    }
+                }
+            }
+            
+            // Restore start and goal
+            if (start) getCell(start.r, start.c).className = 'cell start';
+            if (goal) getCell(goal.r, goal.c).className = 'cell goal';
+            
+            updateStatus('Visualization cleared');
+            updateStats('-', '-');
+        }
+        
+        // ===== SEARCH ALGORITHMS =====
+        
+        function getNeighbors(r, c) {
+            const dirs = [[-1, 0], [0, 1], [1, 0], [0, -1]]; // Up, Right, Down, Left
+            const neighbors = [];
+            
+            for (const [dr, dc] of dirs) {
+                const nr = r + dr;
+                const nc = c + dc;
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc] !== 'wall') {
+                    neighbors.push({ r: nr, c: nc });
+                }
+            }
+            return neighbors;
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        async function visualize(pos, type) {
+            if (grid[pos.r][pos.c] !== 'start' && grid[pos.r][pos.c] !== 'goal') {
+                grid[pos.r][pos.c] = type;
+                getCell(pos.r, pos.c).className = `cell ${type}`;
+            }
+        }
+        
+        // ===== DFS (Depth-First Search) =====
+        async function dfs() {
+            const stack = [{ pos: start, path: [start] }];
+            const visited = new Set();
+            visited.add(`${start.r},${start.c}`);
+            
+            let explored = 0;
+            
+            while (stack.length > 0) {
+                const { pos, path } = stack.pop();
+                explored++;
+                
+                await visualize(pos, 'visited');
+                updateStatus(`DFS: Exploring (${pos.r}, ${pos.c}) - Stack size: ${stack.length}`);
+                await sleep(getSpeed());
+                
+                if (pos.r === goal.r && pos.c === goal.c) {
+                    return { found: true, path, explored };
+                }
+                
+                for (const neighbor of getNeighbors(pos.r, pos.c)) {
+                    const key = `${neighbor.r},${neighbor.c}`;
+                    if (!visited.has(key)) {
+                        visited.add(key);
+                        stack.push({ pos: neighbor, path: [...path, neighbor] });
+                    }
+                }
+            }
+            
+            return { found: false, path: [], explored };
+        }
+        
+        // ===== BFS (Breadth-First Search) =====
+        async function bfs() {
+            const queue = [{ pos: start, path: [start] }];
+            const visited = new Set();
+            visited.add(`${start.r},${start.c}`);
+            
+            let explored = 0;
+            
+            while (queue.length > 0) {
+                const { pos, path } = queue.shift();
+                explored++;
+                
+                await visualize(pos, 'visited');
+                updateStatus(`BFS: Exploring (${pos.r}, ${pos.c}) - Queue size: ${queue.length}`);
+                await sleep(getSpeed());
+                
+                if (pos.r === goal.r && pos.c === goal.c) {
+                    return { found: true, path, explored };
+                }
+                
+                for (const neighbor of getNeighbors(pos.r, pos.c)) {
+                    const key = `${neighbor.r},${neighbor.c}`;
+                    if (!visited.has(key)) {
+                        visited.add(key);
+                        queue.push({ pos: neighbor, path: [...path, neighbor] });
+                    }
+                }
+            }
+            
+            return { found: false, path: [], explored };
+        }
+        
+        // ===== A* (A-Star Search) =====
+        async function astar() {
+            const manhattan = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
+            
+            // Priority queue (simple array, sorted by f-score)
+            const openSet = [{ pos: start, g: 0, f: manhattan(start, goal), path: [start] }];
+            const visited = new Set();
+            
+            let explored = 0;
+            
+            while (openSet.length > 0) {
+                // Get node with lowest f-score
+                openSet.sort((a, b) => a.f - b.f);
+                const current = openSet.shift();
+                const { pos, g, path } = current;
+                
+                const key = `${pos.r},${pos.c}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+                explored++;
+                
+                await visualize(pos, 'visited');
+                updateStatus(`A*: Exploring (${pos.r}, ${pos.c}) - f=${current.f}, g=${g}, h=${current.f - g}`);
+                await sleep(getSpeed());
+                
+                if (pos.r === goal.r && pos.c === goal.c) {
+                    return { found: true, path, explored };
+                }
+                
+                for (const neighbor of getNeighbors(pos.r, pos.c)) {
+                    const nkey = `${neighbor.r},${neighbor.c}`;
+                    if (!visited.has(nkey)) {
+                        const newG = g + 1;
+                        const h = manhattan(neighbor, goal);
+                        openSet.push({ 
+                            pos: neighbor, 
+                            g: newG, 
+                            f: newG + h, 
+                            path: [...path, neighbor] 
+                        });
+                    }
+                }
+            }
+            
+            return { found: false, path: [], explored };
+        }
+        
+        // ===== RUN ALGORITHM =====
+        async function runAlgorithm(algo) {
+            if (isRunning) return;
+            if (!start || !goal) {
+                updateStatus('ERROR: Place both START and GOAL first!');
+                return;
+            }
+            
+            isRunning = true;
+            clearVisualization();
+            
+            const algorithms = { dfs, bfs, astar };
+            const names = { dfs: 'DFS', bfs: 'BFS', astar: 'A*' };
+            
+            updateStatus(`Running ${names[algo]}...`);
+            
+            const result = await algorithms[algo]();
+            
+            if (result.found) {
+                // Draw path
+                for (const pos of result.path) {
+                    await visualize(pos, 'path');
+                    await sleep(getSpeed() / 2);
+                }
+                updateStatus(`${names[algo]} COMPLETE! Found path of length ${result.path.length}`);
+                updateStats(result.path.length, result.explored);
+            } else {
+                updateStatus(`${names[algo]}: No path found!`);
+                updateStats('N/A', result.explored);
+            }
+            
+            isRunning = false;
+        }
+        
+        // ===== START =====
+        initMaze();
+    </script>
+</body>
+</html>
