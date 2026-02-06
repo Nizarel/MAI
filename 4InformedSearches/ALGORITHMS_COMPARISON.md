@@ -1,16 +1,16 @@
-# 🔍 Search Algorithms Comparison: DFS vs BFS vs A*
+# 🔍 Search Algorithms Comparison: DFS vs BFS vs Dijkstra vs A*
 
 ## Quick Summary Table
 
-| Feature | DFS | BFS | A* |
-|---------|-----|-----|-----|
-| **Data Structure** | Stack (LIFO) | Queue (FIFO) | Priority Queue |
-| **Exploration Pattern** | Deep first, then backtrack | Level by level (waves) | Guided toward goal |
-| **Guarantees Shortest Path?** | ❌ No | ✅ Yes | ✅ Yes |
-| **Uses Heuristic?** | ❌ No (Uninformed) | ❌ No (Uninformed) | ✅ Yes (Informed) |
-| **Memory Usage** | Low (current path only) | High (all nodes at level) | Medium-High |
-| **Time Complexity** | O(V + E) | O(V + E) | O(E log V) |
-| **Best For** | Checking if path exists | Finding shortest path | Efficient shortest path |
+| Feature | DFS | BFS | Dijkstra | A* |
+|---------|-----|-----|----------|-----|
+| **Data Structure** | Stack (LIFO) | Queue (FIFO) | Priority Queue (by g) | Priority Queue (by f=g+h) |
+| **Exploration Pattern** | Deep first, then backtrack | Level by level (waves) | Waves by cost (like BFS) | Guided toward goal |
+| **Guarantees Shortest Path?** | ❌ No | ✅ Yes (unweighted) | ✅ Yes (weighted too) | ✅ Yes |
+| **Uses Heuristic?** | ❌ No (Uninformed) | ❌ No (Uninformed) | ❌ No (Uninformed) | ✅ Yes (Informed) |
+| **Memory Usage** | Low (current path only) | High (all nodes at level) | Medium-High | Medium-High |
+| **Time Complexity** | O(V + E) | O(V + E) | O(E log V) | O(E log V) |
+| **Best For** | Checking if path exists | Shortest path (unweighted) | Shortest path (weighted) | Efficient shortest path |
 
 ---
 
@@ -277,7 +277,133 @@ while open_set:
 
 ---
 
-## 4. Side-by-Side Comparison 📊
+## 4. Dijkstra's Algorithm 🛤️
+
+### How It Works
+Dijkstra's algorithm finds the shortest path by always expanding the node with the **lowest known cost g(n)**. It is the foundation that A* builds upon — effectively A* without the heuristic.
+
+```
+Algorithm:
+1. Assign cost 0 to start, infinity to all others
+2. Always explore the unvisited node with lowest cost
+3. Update neighbor costs: g(neighbor) = g(current) + edge_cost
+4. Repeat until goal is reached
+```
+
+### Key Formula: f(n) = g(n)
+```
+No heuristic! Dijkstra only uses actual measured cost.
+
+   g(n) = actual cost from Start to n
+   h(n) = 0   (no estimate, no guidance)
+   f(n) = g(n) + 0 = g(n)
+
+This makes Dijkstra UNINFORMED — it doesn't know where the goal is.
+It expands outward in waves of increasing cost, like BFS.
+```
+
+### The Algorithm Family
+```
+BFS       ⊆  Dijkstra  ⊆  A*
+
+• BFS = Dijkstra with all edge costs = 1
+  (a FIFO queue naturally orders by cost when costs are equal)
+
+• Dijkstra = A* with h(n) = 0
+  (no heuristic to guide the search)
+
+• A* = Dijkstra + heuristic
+  (adds h(n) to focus exploration toward the goal)
+```
+
+### On Unweighted vs Weighted Graphs
+```
+UNWEIGHTED GRID (all costs = 1):
+  Dijkstra ≈ BFS  → same result, same exploration pattern
+  BFS is simpler and faster (no priority queue overhead)
+
+WEIGHTED GRID (different costs):
+  BFS FAILS → it counts hops, not total cost
+  Dijkstra WORKS → it tracks actual cost to each node
+
+Example with weights:
+  S --[1]--> A --[1]--> G      cost = 2
+  S --[5]----> G               cost = 5
+  
+  BFS: finds S→G (1 hop) ← WRONG, not cheapest!
+  Dijkstra: finds S→A→G (cost 2) ← CORRECT!
+```
+
+### Visual Example
+```
+Start: S, Goal: G (unweighted grid)
+
+    S ─── 1 ─── 2 ─── 3
+    │     │           │
+    4 ─── 5 ─── 6 ─── G
+
+Dijkstra exploration (by increasing g):
+  g=0: S
+  g=1: 1, 4         (all cost-1 neighbors)
+  g=2: 2, 5         (all cost-2 neighbors)
+  g=3: 3, 6
+  g=4: G
+
+Identical to BFS because all edges cost 1!
+The priority queue just happens to process in FIFO order.
+```
+
+### Pros ✅
+- **Optimal**: Guarantees shortest path for ANY non-negative weights
+- **Complete**: Will find a solution if one exists
+- **General**: Works for weighted and unweighted graphs
+- **Foundation**: Understanding Dijkstra makes A* easy to learn
+
+### Cons ❌
+- **Uninformed**: No knowledge of goal location (explores all directions)
+- **Slower than A***: Explores more cells because it lacks heuristic guidance
+- **Overkill for unweighted**: BFS is simpler and equally correct
+- **Priority queue overhead**: Slower than BFS per node on unweighted graphs
+
+### Python Implementation Key Part
+```python
+import heapq
+
+# Priority queue: (g_score, counter, position)
+open_set = [(0, 0, start)]   # g=0 for start
+g_score = {start: 0}
+came_from = {}
+
+while open_set:
+    current_g, _, current = heapq.heappop(open_set)  # Lowest g first!
+    
+    if current == goal:
+        return reconstruct_path(came_from, goal)
+    
+    for neighbor in get_neighbors(current):
+        tentative_g = g_score[current] + 1  # +1 for unweighted
+        
+        if tentative_g < g_score.get(neighbor, float('inf')):
+            came_from[neighbor] = current
+            g_score[neighbor] = tentative_g
+            heapq.heappush(open_set, (tentative_g, counter, neighbor))
+```
+
+### Spot the Difference: Dijkstra vs A*
+```python
+# Dijkstra: priority = g(n) only
+heapq.heappush(open_set, (tentative_g, counter, neighbor))
+
+# A*: priority = g(n) + h(n)
+f_score = tentative_g + manhattan(neighbor, goal)
+heapq.heappush(open_set, (f_score, counter, neighbor))
+
+# That single "+manhattan()" is the ENTIRE difference!
+```
+
+---
+
+## 5. Side-by-Side Comparison 📊
 
 ### Exploration Patterns
 
@@ -345,38 +471,53 @@ Visited: 20 cells, Path length: 12
 | "Is there ANY path?" | DFS | Fast, low memory |
 | "Find the SHORTEST path" | BFS or A* | Both optimal |
 | "Find shortest path EFFICIENTLY" | A* | Fewer explorations |
+| "Edges have DIFFERENT costs" | Dijkstra or A* | BFS can't handle weights |
 | "Simple implementation needed" | BFS | Easy to code correctly |
 | "Memory is very limited" | DFS | Only stores current path |
 | "Known goal location" | A* | Can use heuristic |
-| "Unknown goal location" | BFS | Can't estimate distance |
+| "Unknown goal location" | BFS or Dijkstra | Can't estimate distance |
 
 ---
 
-## 5. Key Takeaways for Learning 🎓
+## 6. Key Takeaways for Learning 🎓
 
 ### 1. Data Structure Determines Behavior
 ```
-STACK (DFS)  → Last In, First Out → Goes DEEP
-QUEUE (BFS) → First In, First Out → Goes WIDE
-PRIORITY QUEUE (A*) → Best First → Goes SMART
+STACK (DFS)          → Last In, First Out  → Goes DEEP
+QUEUE (BFS)          → First In, First Out → Goes WIDE
+PRIORITY QUEUE (Dijkstra) → Lowest g First → Goes by COST
+PRIORITY QUEUE (A*)  → Lowest g+h First   → Goes SMART
 ```
 
 ### 2. Optimality Comes from Exploration Order
 ```
-DFS:  Explores in order of discovery (depth)
-      → Might find goal via a long path first
-      → NOT optimal
+DFS:      Explores in order of discovery (depth)
+          → Might find goal via a long path first
+          → NOT optimal
 
-BFS:  Explores in order of distance from start
-      → First path to goal = shortest path
-      → OPTIMAL
+BFS:      Explores in order of distance from start
+          → First path to goal = shortest path
+          → OPTIMAL (unweighted)
 
-A*:   Explores in order of f = g + h (estimated total cost)
-      → First path to goal = shortest (if h is admissible)
-      → OPTIMAL
+Dijkstra: Explores in order of g(n) (actual cost)
+          → First path to goal = cheapest path
+          → OPTIMAL (weighted too)
+
+A*:       Explores in order of f = g + h (estimated total cost)
+          → First path to goal = shortest (if h is admissible)
+          → OPTIMAL (and efficient!)
 ```
 
-### 3. The Trade-off Triangle
+### 3. The Algorithm Hierarchy
+```
+BFS  ⊆  Dijkstra  ⊆  A*
+
+• BFS is Dijkstra with all weights = 1
+• Dijkstra is A* with h(n) = 0
+• A* is Dijkstra + heuristic guidance
+```
+
+### 4. The Trade-off Triangle
 ```
         SPEED
          /\
@@ -387,15 +528,17 @@ A*:   Explores in order of f = g + h (estimated total cost)
     /__________\
 MEMORY      OPTIMALITY
 
-DFS:  Fast, Low Memory, Not Optimal
-BFS:  Slow, High Memory, Optimal
-A*:   Medium, Medium Memory, Optimal (best balance!)
+DFS:      Fast, Low Memory, Not Optimal
+BFS:      Slow, High Memory, Optimal (unweighted)
+Dijkstra: Medium, Medium Memory, Optimal (weighted)
+A*:       Medium, Medium Memory, Optimal (best balance!)
 ```
 
-### 4. Heuristics Make the Difference
+### 5. Heuristics Make the Difference
 ```
 A* with good heuristic: Explores 20 cells to find path
-BFS:                    Explores 50 cells to find same path
+Dijkstra (h=0):         Explores 40 cells for same path
+BFS:                    Explores 50 cells for same path
 
 The heuristic "guides" A* toward promising directions,
 avoiding wasted exploration in the wrong direction.
@@ -403,7 +546,7 @@ avoiding wasted exploration in the wrong direction.
 
 ---
 
-## 6. Practice Exercise 🏋️
+## 7. Practice Exercise 🏋️
 
 Try this in the visualizer:
 
@@ -440,7 +583,7 @@ Try this in the visualizer:
 
 ---
 
-## 7. Common Interview/Exam Questions 📝
+## 8. Common Interview/Exam Questions 📝
 
 **Q1: Why doesn't DFS guarantee the shortest path?**
 > Because DFS explores depth-first, it might find a deep path to the goal before exploring a shorter, shallower path.
@@ -448,13 +591,22 @@ Try this in the visualizer:
 **Q2: Why is BFS optimal for unweighted graphs?**
 > BFS explores nodes in order of their distance from the start. The first time it reaches any node is via the shortest path.
 
-**Q3: What makes A* better than BFS?**
+**Q3: What is the relationship between BFS, Dijkstra, and A*?**
+> BFS ⊆ Dijkstra ⊆ A*. BFS is Dijkstra with all weights = 1. Dijkstra is A* with h(n) = 0. A* is Dijkstra plus a heuristic.
+
+**Q4: When would you use Dijkstra over BFS?**
+> When edges have different costs (weights). BFS counts hops (steps), not total cost, so it fails on weighted graphs.
+
+**Q5: When would you use Dijkstra over A*?**
+> When no good heuristic is available, or when the goal location is unknown. A* degrades to Dijkstra when h(n) = 0.
+
+**Q6: What makes A* better than Dijkstra?**
 > A* uses a heuristic to prioritize exploring nodes that seem closer to the goal, reducing unnecessary exploration while still guaranteeing optimality.
 
-**Q4: What happens if A*'s heuristic overestimates?**
+**Q7: What happens if A*'s heuristic overestimates?**
 > The algorithm might not find the shortest path. Only admissible (never overestimating) heuristics guarantee optimality.
 
-**Q5: When would you choose DFS over BFS?**
+**Q8: When would you choose DFS over BFS?**
 > When you only need to check if a path exists (not the shortest), when memory is limited, or when solutions are known to be deep in the search tree.
 
 ---
@@ -476,6 +628,12 @@ Try this in the visualizer:
 │  ├── Pattern: Level 0 → Level 1 → Level 2 → ...             │
 │  ├── Optimal: YES (unweighted)                              │
 │  └── Memory: O(branching^depth)                             │
+├─────────────────────────────────────────────────────────────┤
+│  Dijkstra's Algorithm                                        │
+│  ├── Structure: Priority Queue (by g)                       │
+│  ├── Pattern: Waves by cost (like BFS for weighted)          │
+│  ├── Optimal: YES (weighted + unweighted)                   │
+│  └── Memory: O(V)                                           │
 ├─────────────────────────────────────────────────────────────┤
 │  A* (A-Star)                                                │
 │  ├── Structure: Priority Queue (by f = g + h)               │

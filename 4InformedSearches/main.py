@@ -5,6 +5,7 @@ Maze Pathfinding Visualizer - Main Entry Point
 A visual tool for learning and comparing search algorithms:
 - DFS (Depth-First Search) - Stack-based, explores deep first
 - BFS (Breadth-First Search) - Queue-based, guarantees shortest path
+- Dijkstra's Algorithm - Priority queue by cost, shortest path in weighted graphs
 - A* (A-Star) - Priority queue with heuristic, optimal and efficient
 
 This program offers two visualization modes:
@@ -94,7 +95,7 @@ def run_demo():
     
     results = {}
     
-    for algo_key in ['dfs', 'bfs', 'astar']:
+    for algo_key in ['dfs', 'bfs', 'dijkstra', 'astar']:
         algo_name, algo_func = ALGORITHMS[algo_key]
         
         # Reset maze visualization
@@ -125,9 +126,9 @@ def run_demo():
         "Algorithm", "Path Len", "Explored", "Optimal?"))
     print("-" * 65)
     
-    for algo_key in ['dfs', 'bfs', 'astar']:
+    for algo_key in ['dfs', 'bfs', 'dijkstra', 'astar']:
         r = results[algo_key]
-        optimal = "✓" if algo_key in ['bfs', 'astar'] else "✗"
+        optimal = "✓" if algo_key in ['bfs', 'astar', 'dijkstra'] else "✗"
         print("{:<30} {:>10} {:>10} {:>12}".format(
             r['name'],
             r['path_length'] if r['found'] else "N/A",
@@ -137,9 +138,10 @@ def run_demo():
     
     print("\nKey Observations:")
     print("-" * 40)
-    print("• BFS and A* find the SHORTEST path (optimal)")
+    print("• BFS, Dijkstra, and A* find the SHORTEST path (optimal)")
     print("• DFS may find a longer path (not optimal)")
-    print("• A* typically explores FEWER cells than BFS")
+    print("• A* typically explores FEWER cells than BFS and Dijkstra")
+    print("• Dijkstra behaves like BFS on unweighted grids (all costs = 1)")
     print("• DFS explores deep before wide (may be faster or slower)")
     
     print("\n" + "=" * 60)
@@ -168,7 +170,7 @@ Controls (GUI mode):
 Controls (Terminal mode):
   Arrow keys    - Move cursor
   w/s/g         - Wall/Start/Goal
-  1/2/3         - DFS/BFS/A*
+  1/2/3/4         - DFS/BFS/A*/Dijkstra
   r/c/q         - Reset/Clear/Quit
 """
     )

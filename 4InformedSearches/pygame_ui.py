@@ -16,6 +16,7 @@ Buttons:
   Reset   - Clear entire maze
   DFS     - Run Depth-First Search
   BFS     - Run Breadth-First Search  
+  Dijkstra - Run Dijkstra's Algorithm
   A*      - Run A* Search
 
 Color Legend:
@@ -35,7 +36,7 @@ import time
 from typing import Optional, Tuple
 
 from maze import Maze, CellType
-from algorithms import dfs, bfs, astar, SearchResult
+from algorithms import dfs, bfs, astar, dijkstra, SearchResult
 
 
 # Window configuration
@@ -141,7 +142,7 @@ class PygameUI:
     def _create_buttons(self) -> None:
         """Create the control buttons."""
         button_y = 10
-        start_x = (WINDOW_WIDTH - (4 * BUTTON_WIDTH + 3 * BUTTON_MARGIN)) // 2
+        start_x = (WINDOW_WIDTH - (5 * BUTTON_WIDTH + 4 * BUTTON_MARGIN)) // 2
         
         self.buttons = {
             'reset': Button(start_x, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "Reset"),
@@ -149,7 +150,9 @@ class PygameUI:
                          BUTTON_WIDTH, BUTTON_HEIGHT, "DFS"),
             'bfs': Button(start_x + 2 * (BUTTON_WIDTH + BUTTON_MARGIN), button_y,
                          BUTTON_WIDTH, BUTTON_HEIGHT, "BFS"),
-            'astar': Button(start_x + 3 * (BUTTON_WIDTH + BUTTON_MARGIN), button_y,
+            'dijkstra': Button(start_x + 3 * (BUTTON_WIDTH + BUTTON_MARGIN), button_y,
+                              BUTTON_WIDTH, BUTTON_HEIGHT, "Dijkstra"),
+            'astar': Button(start_x + 4 * (BUTTON_WIDTH + BUTTON_MARGIN), button_y,
                            BUTTON_WIDTH, BUTTON_HEIGHT, "A*"),
         }
     
@@ -325,6 +328,8 @@ class PygameUI:
                         self._run_algorithm(dfs, "DFS")
                     elif name == 'bfs':
                         self._run_algorithm(bfs, "BFS")
+                    elif name == 'dijkstra':
+                        self._run_algorithm(dijkstra, "Dijkstra")
                     elif name == 'astar':
                         self._run_algorithm(astar, "A*")
             
@@ -357,6 +362,8 @@ class PygameUI:
                     self._run_algorithm(bfs, "BFS")
                 elif event.key == pygame.K_3:
                     self._run_algorithm(astar, "A*")
+                elif event.key == pygame.K_4:
+                    self._run_algorithm(dijkstra, "Dijkstra")
                 elif event.key == pygame.K_ESCAPE:
                     self.running = False
     

@@ -14,6 +14,7 @@ Controls:
   1           - Run DFS
   2           - Run BFS
   3           - Run A*
+  4           - Run Dijkstra
   r           - Reset maze (clear walls and markers)
   c           - Clear visualization only (keep walls)
   q           - Quit
@@ -33,7 +34,7 @@ import time
 from typing import Optional
 
 from maze import Maze, CellType
-from algorithms import dfs, bfs, astar, SearchResult
+from algorithms import dfs, bfs, astar, dijkstra, SearchResult
 
 
 # Animation delay in seconds (how fast the visualization runs)
@@ -150,7 +151,7 @@ class TerminalUI:
             # Draw controls help
             controls = [
                 "Controls: ↑↓←→=move  w=wall  s=start  g=goal",
-                "          1=DFS  2=BFS  3=A*  r=reset  c=clear  q=quit",
+                "          1=DFS  2=BFS  3=A*  4=Dijkstra  r=reset  c=clear  q=quit",
             ]
             for i, line in enumerate(controls):
                 stdscr.addstr(status_row + 2 + i, 0, line)
@@ -269,6 +270,8 @@ class TerminalUI:
             self._run_algorithm(stdscr, bfs, "BFS")
         elif key == ord('3'):
             self._run_algorithm(stdscr, astar, "A*")
+        elif key == ord('4'):
+            self._run_algorithm(stdscr, dijkstra, "Dijkstra")
         
         # Reset
         elif key == ord('r'):

@@ -71,6 +71,9 @@
         .btn-astar { background: #2ecc71; color: white; }
         .btn-astar:hover { background: #27ae60; }
         
+        .btn-dijkstra { background: #1abc9c; color: white; }
+        .btn-dijkstra:hover { background: #16a085; }
+        
         .btn-disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -191,9 +194,9 @@
         .algorithm-info {
             margin-top: 20px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 15px;
-            max-width: 800px;
+            max-width: 900px;
         }
         
         .algo-card {
@@ -206,6 +209,7 @@
         .algo-card.dfs { border-color: #9b59b6; }
         .algo-card.bfs { border-color: #3498db; }
         .algo-card.astar { border-color: #2ecc71; }
+        .algo-card.dijkstra { border-color: #1abc9c; }
         
         .algo-card h4 {
             margin-bottom: 8px;
@@ -220,13 +224,14 @@
 </head>
 <body>
     <h1>🔍 Maze Pathfinding Visualizer</h1>
-    <p class="subtitle">Learn Search Algorithms: DFS, BFS, and A*</p>
+    <p class="subtitle">Learn Search Algorithms: DFS, BFS, Dijkstra, and A*</p>
     
     <div class="controls">
         <button class="btn-reset" onclick="resetMaze()">Reset</button>
         <button class="btn-clear" onclick="clearVisualization()">Clear Path</button>
         <button class="btn-dfs" onclick="runAlgorithm('dfs')">DFS</button>
         <button class="btn-bfs" onclick="runAlgorithm('bfs')">BFS</button>
+        <button class="btn-dijkstra" onclick="runAlgorithm('dijkstra')">Dijkstra</button>
         <button class="btn-astar" onclick="runAlgorithm('astar')">A*</button>
     </div>
     
@@ -265,6 +270,10 @@
         <div class="algo-card bfs">
             <h4>🌊 BFS (Breadth-First)</h4>
             <p>Uses a <strong>Queue</strong> (FIFO). Explores level by level. <strong>Guarantees shortest path</strong> but explores more cells.</p>
+        </div>
+        <div class="algo-card dijkstra">
+            <h4>🛤️ Dijkstra's</h4>
+            <p>Uses <strong>Priority Queue</strong> by cost g(n). <strong>Guarantees shortest path</strong> even in weighted graphs. BFS ⊆ Dijkstra ⊆ A*.</p>
         </div>
         <div class="algo-card astar">
             <h4>⭐ A* (A-Star)</h4>
@@ -582,6 +591,49 @@
             return { found: false, path: [], explored };
         }
         
+        // ===== Dijkstra's Algorithm =====
+        async function dijkstra() {
+            // Priority queue (simple array, sorted by g-score only — no heuristic)
+            const openSet = [{ pos: start, g: 0, path: [start] }];
+            const visited = new Set();
+            
+            let explored = 0;
+            
+            while (openSet.length > 0) {
+                // Get node with lowest g-score (cost from start)
+                openSet.sort((a, b) => a.g - b.g);
+                const current = openSet.shift();
+                const { pos, g, path } = current;
+                
+                const key = `${pos.r},${pos.c}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+                explored++;
+                
+                await visualize(pos, 'visited');
+                updateStatus(`Dijkstra: Exploring (${pos.r}, ${pos.c}) - g=${g} (cost from start)`);
+                await sleep(getSpeed());
+                
+                if (pos.r === goal.r && pos.c === goal.c) {
+                    return { found: true, path, explored };
+                }
+                
+                for (const neighbor of getNeighbors(pos.r, pos.c)) {
+                    const nkey = `${neighbor.r},${neighbor.c}`;
+                    if (!visited.has(nkey)) {
+                        const newG = g + 1;
+                        openSet.push({ 
+                            pos: neighbor, 
+                            g: newG, 
+                            path: [...path, neighbor] 
+                        });
+                    }
+                }
+            }
+            
+            return { found: false, path: [], explored };
+        }
+        
         // ===== RUN ALGORITHM =====
         async function runAlgorithm(algo) {
             if (isRunning) return;
@@ -593,8 +645,8 @@
             isRunning = true;
             clearVisualization();
             
-            const algorithms = { dfs, bfs, astar };
-            const names = { dfs: 'DFS', bfs: 'BFS', astar: 'A*' };
+            const algorithms = { dfs, bfs, dijkstra, astar };
+            const names = { dfs: 'DFS', bfs: 'BFS', dijkstra: 'Dijkstra', astar: 'A*' };
             
             updateStatus(`Running ${names[algo]}...`);
             

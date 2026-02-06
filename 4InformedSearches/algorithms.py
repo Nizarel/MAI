@@ -30,6 +30,13 @@ Educational Overview:
    - More efficient than BFS due to heuristic guidance
    - Time: O(E log V), Space: O(V)
 
+4. Dijkstra's Algorithm - UNINFORMED
+   - Uses a PRIORITY QUEUE ordered by g(n) (actual cost only)
+   - Equivalent to A* with h(n) = 0 (no heuristic)
+   - GUARANTEES shortest path (even in weighted graphs)
+   - On unweighted graphs, behaves identically to BFS
+   - Time: O(E log V), Space: O(V)
+
 Key Concepts:
 =============
 - UNINFORMED: No knowledge of goal location (BFS, DFS)
@@ -386,6 +393,121 @@ def astar(maze: Maze) -> Generator[Tuple[Position, Set[Position], Path], None, S
 
 
 # =============================================================================
+# Dijkstra's Algorithm
+# =============================================================================
+
+def dijkstra(maze: Maze) -> Generator[Tuple[Position, Set[Position], Path], None, SearchResult]:
+    """
+    Dijkstra's Algorithm implemented as a generator.
+    
+    Dijkstra's algorithm finds the shortest path in a weighted graph by
+    always expanding the node with the lowest known cost g(n). It is
+    equivalent to A* with h(n) = 0 (no heuristic guidance).
+    
+    **GUARANTEES SHORTEST PATH** (even in weighted graphs!)
+    
+    On an unweighted grid (all edges cost 1), Dijkstra behaves
+    identically to BFS — both explore in order of distance from start.
+    The key difference is that Dijkstra generalizes to weighted edges.
+    
+    Key formula: f(n) = g(n)
+    - g(n) = actual cost from start to n
+    - No heuristic — purely cost-based expansion
+    
+    Relationship to other algorithms:
+    - BFS = Dijkstra on unweighted graphs
+    - Dijkstra = A* with h(n) = 0
+    - A* = Dijkstra + heuristic guidance
+    
+    Visualization:
+    - Expands outward in waves of increasing cost (like BFS)
+    - On an unweighted grid, exploration looks identical to BFS
+    - Uses a priority queue instead of a simple FIFO queue
+    
+    Yields:
+        Tuple of (current_position, visited_set, current_path) at each step
+        
+    Returns:
+        SearchResult with shortest path (if found) and statistics
+        
+    Algorithm Steps:
+    ----------------
+    1. Add start to priority queue with g = 0
+    2. While priority queue not empty:
+       a. Pop node with lowest g value (current)
+       b. If current is goal, return path
+       c. For each neighbor:
+          - Calculate tentative g = g(current) + edge_cost
+          - If better than recorded g for neighbor, update
+    3. If queue empty, no path exists
+    """
+    if not maze.is_ready():
+        return SearchResult(found=False)
+    
+    start = maze.start
+    goal = maze.goal
+    
+    # Priority queue: (g_score, counter, position)
+    # Counter is used to break ties (FIFO behavior)
+    counter = 0
+    open_set: List[Tuple[int, int, Position]] = []
+    heapq.heappush(open_set, (0, counter, start))
+    
+    # Track where we came from for path reconstruction
+    came_from: Dict[Position, Position] = {}
+    
+    # g_score: actual cost from start to each node
+    # Default to infinity for unvisited nodes
+    g_score: Dict[Position, int] = {start: 0}
+    
+    # Track what's in open_set for O(1) lookup
+    open_set_hash: Set[Position] = {start}
+    
+    # Track all visited nodes (for visualization)
+    visited: Set[Position] = set()
+    
+    while open_set:
+        # Pop node with lowest g_score
+        current_g, _, current = heapq.heappop(open_set)
+        open_set_hash.discard(current)
+        
+        # Mark as visited (closed set)
+        visited.add(current)
+        
+        # Build current path for visualization
+        path = reconstruct_path(came_from, current)
+        
+        # Yield current state for visualization
+        yield (current, visited.copy(), path)
+        
+        # Check if we reached the goal
+        if current == goal:
+            final_path = reconstruct_path(came_from, goal)
+            return SearchResult(path=final_path, visited_count=len(visited), found=True)
+        
+        # Explore neighbors
+        for neighbor in maze.get_neighbors(current[0], current[1]):
+            # Calculate tentative g_score
+            # (cost to reach neighbor through current)
+            tentative_g = g_score[current] + 1  # All edges have cost 1
+            
+            # Is this a better path to neighbor?
+            if tentative_g < g_score.get(neighbor, float('inf')):
+                # Yes! Update the path
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g
+                
+                # Add to open set if not already there
+                if neighbor not in open_set_hash:
+                    counter += 1
+                    heapq.heappush(open_set, (tentative_g, counter, neighbor))
+                    open_set_hash.add(neighbor)
+    
+    # No path found
+    return SearchResult(visited_count=len(visited), found=False)
+
+
+# =============================================================================
 # Algorithm Registry - For easy access by name
 # =============================================================================
 
@@ -393,6 +515,7 @@ ALGORITHMS = {
     'dfs': ('DFS (Depth-First Search)', dfs),
     'bfs': ('BFS (Breadth-First Search)', bfs),
     'astar': ('A* (A-Star Search)', astar),
+    'dijkstra': ("Dijkstra's Algorithm", dijkstra),
 }
 
 
@@ -401,7 +524,7 @@ def get_algorithm(name: str):
     Get an algorithm function by name.
     
     Args:
-        name: One of 'dfs', 'bfs', 'astar'
+        name: One of 'dfs', 'bfs', 'astar', 'dijkstra'
         
     Returns:
         The algorithm generator function
@@ -440,7 +563,7 @@ if __name__ == "__main__":
     print()
     
     # Test each algorithm
-    for algo_key in ['dfs', 'bfs', 'astar']:
+    for algo_key in ['dfs', 'bfs', 'astar', 'dijkstra']:
         algo_name, algo_func = ALGORITHMS[algo_key]
         print(f"\n{algo_name}:")
         print("-" * 40)
