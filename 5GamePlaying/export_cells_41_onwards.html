@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Games4e Notebook - Cells 41 onwards</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #ffffff;
+            color: #000000;
+        }
+        .cell {
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        .markdown-cell {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007acc;
+        }
+        .code-cell {
+            background: #ffffff;
+            color: #000000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+        .code-cell pre {
+            margin: 0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .output {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 10px;
+            border-left: 4px solid #4caf50;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        @media print {
+            body {
+                max-width: 100%;
+            }
+            .cell {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="cell">
+    <div class="code-cell">
+        <pre>from games4e import query_player, mcts_player, random_player
+from utils4e import MCT_Node, ucb</pre>
+    </div>
+</div>
+
+<div class="cell markdown-cell">
+    <h1>Interactive Connect Four Game</h1>
+    <p>Play Connect Four as the query player (X) against the heuristic alpha-beta search player (O).</p>
+</div>
+
+<div class="cell">
+    <div class="code-cell">
+        <pre># Define query_player compatible with our notebook's API
+def query_player_notebook(game, state):
+    """Make a move by querying standard input."""
+    print("\ncurrent state:")
+    game.display(state)
+    print("available moves: {}".format(game.actions(state)))
+    print("")
+    move = None
+    if game.actions(state):
+        move_string = input('Your move? ')
+        try:
+            move = eval(move_string)
+        except NameError:
+            move = move_string
+    else:
+        print('no legal moves: passing turn to next player')
+    return move
+
+# Create Connect Four game and play
+# You are X (query player), AI is O (heuristic alpha-beta)
+print("Connect Four: You (X) vs AI (O)")
+print("Enter your move as a tuple, e.g., (0, 5) for column 0")
+print("Remember: In Connect Four, you can only play in the lowest empty square of each column")
+print("\nLet's play!\n")
+
+result = play_game(ConnectFour(), 
+                   dict(X=query_player_notebook, O=player(h_alphabeta_search)), 
+                   verbose=True)
+
+print("\n" + "="*50)
+if result.utility == 1:
+    print("X (You) WINS! 🎉")
+elif result.utility == -1:
+    print("O (AI) WINS! 🤖")
+else:
+    print("It's a DRAW! 🤝")
+print("="*50)</pre>
+    </div>
+    <div class="output">[Interactive game output - execution specific]</div>
+</div>
+
+<div class="cell markdown-cell">
+    <h1>MCTS vs Heuristic Alpha-Beta Search</h1>
+    <p>Now let's test Monte Carlo Tree Search against the heuristic alpha-beta search player over 5 rounds.</p>
+</div>
+
+<div class="cell">
+    <div class="code-cell">
+        <pre># Import MCTS player from games4e
+from games4e import monte_carlo_tree_search
+
+# Create MCTS player wrapper
+def mcts_player(game, state):
+    """MCTS player that returns just the move (not the full action)."""
+    return monte_carlo_tree_search(state, game, N=1000)
+
+# Run 5 rounds: MCTS (X) vs Heuristic Alpha-Beta (O)
+print("Running 5 rounds: MCTS (X) vs Heuristic Alpha-Beta (O)")
+print("="*60)
+
+results = {'X': 0, 'O': 0, 'Draw': 0}
+
+for round_num in range(1, 6):
+    print(f"\n{'='*60}")
+    print(f"ROUND {round_num}")
+    print(f"{'='*60}")
+    
+    result = play_game(ConnectFour(), 
+                       dict(X=mcts_player, O=player(h_alphabeta_search)), 
+                       verbose=False)
+    
+    if result.utility == 1:
+        winner = 'X (MCTS)'
+        results['X'] += 1
+    elif result.utility == -1:
+        winner = 'O (Alpha-Beta)'
+        results['O'] += 1
+    else:
+        winner = 'Draw'
+        results['Draw'] += 1
+    
+    print(f"\nRound {round_num} Result: {winner}")
+    print(result)
+
+# Final summary
+print("\n" + "="*60)
+print("FINAL RESULTS AFTER 5 ROUNDS")
+print("="*60)
+print(f"MCTS (X) wins:              {results['X']}")
+print(f"Alpha-Beta (O) wins:        {results['O']}")
+print(f"Draws:                      {results['Draw']}")
+print("="*60)
+
+if results['X'] > results['O']:
+    print("🏆 WINNER: Monte Carlo Tree Search (MCTS)")
+elif results['O'] > results['X']:
+    print("🏆 WINNER: Heuristic Alpha-Beta Search")
+else:
+    print("🤝 Overall: TIE")
+print("="*60)</pre>
+    </div>
+    <div class="output">Running 5 rounds: MCTS (X) vs Heuristic Alpha-Beta (O)
+============================================================
+
+============================================================
+ROUND 1
+============================================================
+
+Round 1 Result: X (MCTS)
+. . . . . . .
+. . . O . . X
+. . . O . X O
+. X . X X O X
+. O . X O X X
+O O . X X O O
+
+
+============================================================
+ROUND 2
+============================================================
+
+Round 2 Result: O (Alpha-Beta)
+. X O . X . O
+O O O . X O O
+O O X . O X O
+X X X . X X X
+O O O O O X X
+X O X X X O X
+
+
+============================================================
+ROUND 3
+============================================================
+
+Round 3 Result: X (MCTS)
+. X . X O . O
+. O . O O . X
+. X . O X X O
+. X X X O O X
+O X O X O X X
+X O O X X O O
+
+
+============================================================
+ROUND 4
+============================================================
+
+Round 4 Result: X (MCTS)
+. X O X . O O
+. O X O . O O
+. O X O . X O
+X X X X . X X
+X X O X O X O
+X O X X O O O
+
+
+============================================================
+ROUND 5
+============================================================
+
+Round 5 Result: X (MCTS)
+. . . . . . .
+. . . . . . .
+. . . O . . .
+. X X X X . .
+. O O X O . .
+. O X X O X O
+
+
+============================================================
+FINAL RESULTS AFTER 5 ROUNDS
+============================================================
+MCTS (X) wins:              4
+Alpha-Beta (O) wins:        1
+Draws:                      0
+============================================================
+🏆 WINNER: Monte Carlo Tree Search (MCTS)
+============================================================</div>
+</div>
+
+</body>
+</html>
